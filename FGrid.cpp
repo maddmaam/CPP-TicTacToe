@@ -8,30 +8,38 @@
 FGrid::FGrid()
 {
     InitializeGrid();
-    constexpr char GridState[] {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'};
+    constexpr char GridState[] {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', '\0'};
     strcpy_s(CurrentGridState, GridState);
 }
 
 FGrid::~FGrid()
-= default;
+{}
 
-void FGrid::MakeMove(char Position, char CharacterMoveIcon)
+bool FGrid::MakeMove(char Position, char CharacterMoveIcon)
 {
     if (Position > EndCharacter)
     {
-        return;
+        return false;
     }
-    const int GridPosition = StartCharacter - Position;
+    const int GridPosition = Position - StartCharacter;
     if (CurrentGridState[GridPosition] == 'X' || CurrentGridState[GridPosition] == 'O')
     {
-        std::cout << "Invalid Move!" << '\n';
+        return false;
     }
     CurrentGridState[GridPosition] = CharacterMoveIcon;
+    RePrintGrid(Position, CharacterMoveIcon);
+    return true;
+}
+
+bool FGrid::PlayerWon(char& OutPlayerWon)
+{
+    // TODO: CHECK DIAGONALS AND HORIZONTAL/VERTICAL
+    return false;
 }
 
 void FGrid::InitializeGrid() const
 {
-    for (char StartingCharacter = StartCharacter; StartingCharacter < 'H'; StartingCharacter += 3)
+    for (char StartingCharacter = StartCharacter; StartingCharacter < 'H'; StartingCharacter += NumberOfRows)
     {
         std::cout << EmptyRow << '\n';
         std::cout << "  " << StartingCharacter << "  |  " << static_cast<char>(StartingCharacter+1) <<"  |  " << static_cast<char>(StartingCharacter+2) << '\n';
@@ -40,7 +48,12 @@ void FGrid::InitializeGrid() const
     }
 }
 
-void FGrid::RePrintGrid()
+void FGrid::RePrintGrid(char ChangedCharacter, char CharacterMoveIcon) const
 {
-    // MoveCursorTo();
+    const int RawCharacterPosition = StartCharGridX + (ChangedCharacter - StartCharacter) * GridXDiff;
+    const int CharacterPositionX = RawCharacterPosition % (NumberOfRows * GridXDiff);
+    const int CharacterPositionY = RawCharacterPosition / (NumberOfRows * GridXDiff) * GridYDiff + StartCharGridY;
+    MoveCursorTo(CharacterPositionX, CharacterPositionY);
+    std::cout << CharacterMoveIcon;
+    MoveCursorTo(0, NumberOfRows * GridYDiff + StartCharGridY - 1);
 }

@@ -7,11 +7,14 @@ class Player
 {
 public:
     Player();
-    Player(const FGrid& Grid);
+    Player(FGrid* Grid, char IndicatorCharacter);
     ~Player();
 
-    void MakeMove(char GridChar);
+    void MakeMove() const;
 
 private:
-    FGrid GameGrid;
+    FGrid* GameGrid;
+    char PlayerChar;
+    const char StartChar = 'A';
+    const char EndValidChar = 'I';
 };
