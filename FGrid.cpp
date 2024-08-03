@@ -15,7 +15,7 @@ FGrid::FGrid()
 FGrid::~FGrid()
 {}
 
-bool FGrid::MakeMove(char Position, char CharacterMoveIcon)
+bool FGrid::MakeMove(char Position, char CharacterMoveIcon, PROD225Colours MoveColour, int& NumInvalidMoves)
 {
     if (Position > EndCharacter)
     {
@@ -27,18 +27,65 @@ bool FGrid::MakeMove(char Position, char CharacterMoveIcon)
         return false;
     }
     CurrentGridState[GridPosition] = CharacterMoveIcon;
-    RePrintGrid(Position, CharacterMoveIcon);
+    RePrintGrid(Position, CharacterMoveIcon, MoveColour, NumInvalidMoves);
+    GridPlacements++;
     return true;
 }
 
-bool FGrid::PlayerWon(char& OutPlayerWon)
+
+/**
+ * \brief Call to determine if a player has won the game (or it has ended as a result of a draw)
+ * \param OutPlayerWon The Player (or in the case of the draw the draw message) that won.
+ * \return True if the game is over
+ */
+bool FGrid::PlayerWon(char& OutPlayerWon) const
 {
-    // TODO: CHECK DIAGONALS AND HORIZONTAL/VERTICAL
+    // Check Diagonals
+    const char TopLeftPlayer = CurrentGridState[0];
+    if (TopLeftPlayer == CurrentGridState[4] && TopLeftPlayer == CurrentGridState[8])
+    {   // Diagonal Top Left to Bottom Right
+        OutPlayerWon = TopLeftPlayer;
+        return true;
+    }
+    const char TopRightPlayer = CurrentGridState[2];
+    if (TopRightPlayer == CurrentGridState[4] && TopRightPlayer == CurrentGridState[6])
+    {   // Diagonal Top Right to Bottom Left
+        OutPlayerWon = TopRightPlayer;
+        return true;
+    }
+
+    for (int GridPos = 1; GridPos < NumGridMembers; GridPos+=NumberOfRows)
+    {   // Check the Horizontals
+        if (CurrentGridState[GridPos-1] == CurrentGridState[GridPos]
+            && CurrentGridState[GridPos] == CurrentGridState[GridPos+1])
+        {
+            OutPlayerWon = CurrentGridState[GridPos];
+            return true;
+        }
+    }
+
+    for (int GridMiddlePos = 0; GridMiddlePos < MiddleRowOffset; GridMiddlePos++)
+    {   // Check the Verticals
+        if (CurrentGridState[GridMiddlePos] == CurrentGridState[GridMiddlePos+MiddleRowOffset] &&
+            CurrentGridState[GridMiddlePos] == CurrentGridState[GridMiddlePos+BottomRowOffset])
+        {
+            OutPlayerWon = CurrentGridState[GridMiddlePos];
+            return true;
+        }
+    }
+
+    if (GridPlacements >= 9)
+    {
+        OutPlayerWon = 'Z';
+        return true;
+    }
+    
     return false;
 }
 
 void FGrid::InitializeGrid() const
 {
+    std::cout << BoundaryRow << '\n';
     for (char StartingCharacter = StartCharacter; StartingCharacter < 'H'; StartingCharacter += NumberOfRows)
     {
         std::cout << EmptyRow << '\n';
@@ -48,12 +95,25 @@ void FGrid::InitializeGrid() const
     }
 }
 
-void FGrid::RePrintGrid(char ChangedCharacter, char CharacterMoveIcon) const
+void FGrid::RePrintGrid(char ChangedCharacter, char CharacterMoveIcon, PROD225Colours MoveColour, int& NumberOfInvalidAttempts) const
 {
     const int RawCharacterPosition = StartCharGridX + (ChangedCharacter - StartCharacter) * GridXDiff;
     const int CharacterPositionX = RawCharacterPosition % (NumberOfRows * GridXDiff);
     const int CharacterPositionY = RawCharacterPosition / (NumberOfRows * GridXDiff) * GridYDiff + StartCharGridY;
-    MoveCursorTo(CharacterPositionX, CharacterPositionY);
-    std::cout << CharacterMoveIcon;
+    // The lines below Replace the current printed grid with a coloured background version with the symbol (O or X) of the player
+    SetTextColour(WHITE, MoveColour);
+    MoveCursorTo(CharacterPositionX-1, CharacterPositionY-1);
+    std::cout << "   ";
+    MoveCursorTo(CharacterPositionX-1, CharacterPositionY); 
+    std::cout << " " << CharacterMoveIcon << " ";
+    MoveCursorTo(CharacterPositionX-1, CharacterPositionY+1);
+    std::cout << "   ";
+
+    for (int InvalidAttemptRowOffset = 0; InvalidAttemptRowOffset <= NumberOfInvalidAttempts; InvalidAttemptRowOffset++)
+    {
+        SetTextColour(WHITE, BLACK);
+        MoveCursorTo(0, NumberOfRows * GridYDiff + StartCharGridY - 1 + InvalidAttemptRowOffset);
+        std::cout << "                                  " << '\n'; // Massive string of spaces to clear all text
+    }
     MoveCursorTo(0, NumberOfRows * GridYDiff + StartCharGridY - 1);
 }
