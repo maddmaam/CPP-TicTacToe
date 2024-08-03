@@ -35,6 +35,5 @@ int main()
 	{
 		std::cout << "RESULT:    " << WinnerPlayer << " wins" << '\n';
 	}
-	_getche();
 	return NO_ERROR;
 }
